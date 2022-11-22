@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <style>
+      .hide {
+        display: none;
+      }
+      #reader {
+        width: 80vw;
+      }
+    </style>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <select id="cam-opts"></select>
+    <button id="start">Start</button>
+    <button id="stop" class="hide">Stop</button>
+    <div id="reader"></div>
+    <div id="results"></div>
+    <script type="text/javascript">
+
+(() => {
+  const READER = 'reader';
+  const RESULTS = 'results';
+
+  let readerContainer = $(`#${READER}`);
+  let resultContainer = $(`#${RESULTS}`);
+
+  let scannerAPI = new Html5Qrcode(READER);
+  window.scannerAPI = scannerAPI;
+
+  Html5Qrcode.getCameras().then((cameraDevices) => {
+    console.log(cameraDevices);
+    for (let cameraDevice of cameraDevices) {
+      let elem = document.createElement('option');
+      elem.value = cameraDevice.id;
+      elem.innerText = cameraDevice.label;
+      $('#cam-opts')[0].appendChild(elem);
+    }
+  });
+
+  $('#start').on('click', () => {
+    $('#start').addClass('hide');
+    $('#stop').removeClass('hide');
+
+    let cameraId = $('#cam-opts')[0].value;
+    scannerAPI.start(
+      cameraId, {
+      fps: 15,
+      qrbox: {
+        width: 300,
+        height: 300
+      }
+    }, (decodedText, decodedResult) => {
+      $('#results')[0].innerHTML = decodedText;
+      console.log(`Scan result ${decodedText}`, decodedResult);
+    }, (errorMessage, error) => {
+      // console.log(errorMessage, error);
+    });
+  });
+
+  $('#stop').on('click', () => {
+    $('#start').removeClass('hide');
+    $('#stop').addClass('hide');
+
+    scannerAPI.stop();
+  });
+})();
+    </script>
+  </body>
+</html>
