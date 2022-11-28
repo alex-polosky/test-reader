@@ -1,106 +1,70 @@
 <html>
   <head>
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-      }
-
       .hide {
         display: none;
       }
-
-      header {
-        display: flex;
-        height: 20vw;
-        justify-content: center;
-        align-items: center;
-      }
-      header h1 {
-      }
-
       #reader {
-        margin: 0;
-        padding: 0;
-        width: 100vw;
+        width: 80vw;
       }
     </style>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
   </head>
   <body>
-    <header>
-      <h1>Test</h1>
-    </header>
+    <select id="cam-opts"></select>
+    <button id="start">Start</button>
+    <button id="stop" class="hide">Stop</button>
     <div id="reader"></div>
+    <div id="results"></div>
     <script type="text/javascript">
+
 (() => {
   const READER = 'reader';
-  const ASPECT = 4.0 / 3.0;
-  const PADDING = 0.3;
+  const RESULTS = 'results';
 
-  $(`#${READER}`)[0].style.height = `${1.0 / ASPECT * 100}vw`;
-
-  let cameras = [];
-  let activeCamera = 0;
+  let readerContainer = $(`#${READER}`);
+  let resultContainer = $(`#${RESULTS}`);
 
   let scannerAPI = new Html5Qrcode(READER);
   window.scannerAPI = scannerAPI;
 
-  function onDecode(text, result) {
-
-  }
-
-  function onError(message, error) {
-
-  }
-
-  function setCamera(id) {
-    try {
-      scannerAPI.stop();
-    } catch { }
-    var isValid = false;
-    for (let camera of cameras) {
-      if (camera.id === id) {
-        isValid = true;
-      }
-    }
-    if (id == null) {
-      id = { facingMode: 'environment' };
-      isValid = true;
-    }
-
-    if (!isValid) {
-      console.error('Camera does not exist');
-      return;
-    }
-
-    var rect = $(`#${READER}`)[0].getBoundingClientRect();
-    scannerAPI.start(id, {
-      fps: 20,
-      aspectRatio: ASPECT,
-      qrbox: {
-        width: rect.width * (1 - (PADDING * 2)),
-        height: rect.width * (1 - (PADDING * 2))
-      }
-    }, onDecode, onError);
-  }
-
   Html5Qrcode.getCameras().then((cameraDevices) => {
     console.log(cameraDevices);
     for (let cameraDevice of cameraDevices) {
-      cameras.push({ id: cameraDevice.id, label: cameraDevice.label });
+      let elem = document.createElement('option');
+      elem.value = cameraDevice.id;
+      elem.innerText = cameraDevice.label;
+      $('#cam-opts')[0].appendChild(elem);
     }
-
-    if (cameras.length === 0) {
-      console.error('No available cameras');
-      return;
-    }
-
-    // setCamera(cameras[0].id);
-    setCamera();
   });
 
+  $('#start').on('click', () => {
+    $('#start').addClass('hide');
+    $('#stop').removeClass('hide');
+
+    let cameraId = $('#cam-opts')[0].value;
+    scannerAPI.start(
+      cameraId, {
+      fps: 15,
+      qrbox: {
+        width: 300,
+        height: 300
+      }
+    }, (decodedText, decodedResult) => {
+      $('#results')[0].innerHTML = decodedText;
+      console.log(`Scan result ${decodedText}`, decodedResult);
+    }, (errorMessage, error) => {
+      // console.log(errorMessage, error);
+    });
+  });
+
+  $('#stop').on('click', () => {
+    $('#start').removeClass('hide');
+    $('#stop').addClass('hide');
+
+    scannerAPI.stop();
+  });
 })();
     </script>
   </body>
